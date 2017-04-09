@@ -8,8 +8,9 @@ void create_passable_labyrinth_automatically(int rows, int collumns, int labyrin
 void create_labyrinth_manually(int rows, int collumns, int labyrinth[rows][collumns]);
 void create_labyrinth(int rows, int collumns, int labyrinth[rows][collumns]);
 void print_labyrinth(int rows, int collumns, int labyrinth[rows][collumns]);
+void print_path(int rows, int collumns, int path[rows * collumns][2]);
 int find_path(int rows, int collumns, int labyrinth[rows][collumns], int checked_tiles[rows][collumns],
-			  int current_x, int current_y, int print_contents);
+			  int path[rows * collumns][2], int current_x, int current_y, int path_num);
 void create_empty_matrix(int rows, int collumns, int matrix[rows][collumns], int number);
 void clear();
 // LEGEND:
@@ -27,16 +28,22 @@ int main(void) {
 	scanf("%d", &collumns);
 
 	int checked_tiles[rows][collumns];
+	int path[rows * collumns][2];
 	create_empty_matrix(rows, collumns, checked_tiles, 0);
-	checked_tiles[rows - 1][collumns - 1] = 1;
+	create_empty_matrix(rows * collumns, 2, path, -1);
+	checked_tiles[0][0] = 1;
 	
 	int labyrinth[rows][collumns];
 	create_labyrinth(rows, collumns, labyrinth);
 	clear();
 	print_labyrinth(rows, collumns, labyrinth);
 
-	if(!find_path(rows, collumns, labyrinth, checked_tiles, rows - 1, collumns - 1, 1)) {
+	if(!find_path(rows, collumns, labyrinth, checked_tiles, path, 0, 0, 0)) {
 		printf("No path exists!");
+	}
+	else 
+	{
+		print_path(rows, collumns, path);
 	}
 }
 
@@ -64,6 +71,7 @@ void create_labyrinth_automatically(int rows, int collumns, int labyrinth[rows][
 void create_passable_labyrinth_automatically(int rows, int collumns, int labyrinth[rows][collumns]) {
 	
 	int checked_tiles[rows][collumns];
+	int path[rows * collumns][2];
 	do 
 	{
 		create_empty_matrix(rows, collumns, labyrinth, 0);
@@ -79,7 +87,7 @@ void create_passable_labyrinth_automatically(int rows, int collumns, int labyrin
 		}
 		labyrinth[0][0] = 1;
 		labyrinth[rows - 1][collumns - 1] = 1;
-	} while(!find_path(rows, collumns, labyrinth, checked_tiles, rows - 1, collumns - 1, 0));
+	} while(!find_path(rows, collumns, labyrinth, checked_tiles, path, 0, 0, 0));
 }
 
 void create_labyrinth_manually(int rows, int collumns, int labyrinth[rows][collumns]) {
@@ -145,9 +153,21 @@ void print_labyrinth(int rows, int collumns, int labyrinth[rows][collumns]) {
 	}
 }
 
-int find_path(int rows, int collumns, int labyrinth[rows][collumns], int checked_tiles[rows][collumns],
-			  int current_x, int current_y, int print_contents) {
+void print_path(int rows, int collumns, int path[rows * collumns][2]) {
+	int path_num = 1;
+	printf("Path: \n");
+	for(int i = 0; i < rows * collumns; i++) {
+		if(path[i][0] != -1) {
+			printf("%d. X: %d | Y: %d\n", path_num, path[i][0] + 1, path[i][1] + 1);
+			path_num++;
+		}
+	}
+}
 
+int find_path(int rows, int collumns, int labyrinth[rows][collumns], int checked_tiles[rows][collumns],
+			  int path[rows * collumns][2], int current_x, int current_y, int path_num) {
+
+	int starting_path_num = path_num;
 	int path_exists = 0;
 	int path1 = 0;
 	int path2 = 0;
@@ -155,10 +175,9 @@ int find_path(int rows, int collumns, int labyrinth[rows][collumns], int checked
 	int path4 = 0;
 
 	// Return 1 if reached the end.
-	if(current_x == 0 && current_y == 0) {
-		if(print_contents) {
-			printf("Current x: %d | Current y: %d\n", current_x + 1, current_y + 1);
-		}
+	if(current_x == rows - 1 && current_y == collumns - 1) {
+		path[path_num][0] = current_x;
+		path[path_num][1] = current_y;
 		return 1;
 	}
 
@@ -168,31 +187,30 @@ int find_path(int rows, int collumns, int labyrinth[rows][collumns], int checked
 	// 3. isnt already checked
 	// If at least one of the combinations is true run another instance of function with other parameters
 	// Else return 0
-
+	
 	if(current_x - 1 >= 0 && labyrinth[current_x - 1][current_y] && !checked_tiles[current_x - 1][current_y]) {
 		checked_tiles[current_x - 1][current_y] = 1;
-		path1 = find_path(rows, collumns, labyrinth, checked_tiles, current_x - 1, current_y, print_contents);
+		path1 = find_path(rows, collumns, labyrinth, checked_tiles, path, current_x - 1, current_y, ++path_num);
 	}
 
 	if(current_y - 1 >= 0 && labyrinth[current_x][current_y - 1] && !checked_tiles[current_x][current_y - 1]) {
 		checked_tiles[current_x][current_y - 1] = 1;
-		path2 = find_path(rows, collumns, labyrinth, checked_tiles, current_x, current_y - 1, print_contents);
+		path2 = find_path(rows, collumns, labyrinth, checked_tiles, path, current_x, current_y - 1, ++path_num);
 	}
 
 	if(current_x + 1 < rows && labyrinth[current_x + 1][current_y] && !checked_tiles[current_x + 1][current_y]) {
 		checked_tiles[current_x + 1][current_y] = 1;
-		path3 = find_path(rows, collumns, labyrinth, checked_tiles, current_x + 1, current_y, print_contents);
+		path3 = find_path(rows, collumns, labyrinth, checked_tiles, path, current_x + 1, current_y, ++path_num);
 	}
 
 	if(current_y + 1 < collumns && labyrinth[current_x][current_y + 1] && !checked_tiles[current_x][current_y + 1]) {
 		checked_tiles[current_x][current_y + 1] = 1;
-		path4 = find_path(rows, collumns, labyrinth, checked_tiles, current_x, current_y + 1, print_contents);
+		path4 = find_path(rows, collumns, labyrinth, checked_tiles, path, current_x, current_y + 1, ++path_num);
 	}
 
 	if(path1 || path2 || path3 || path4) {
-		if(print_contents) {
-			printf("Current x: %d | Current y: %d\n", current_x + 1, current_y + 1);
-		}
+		path[starting_path_num][0] = current_x;
+		path[starting_path_num][1] = current_y;
 		return 1;
 	}
 	else 
